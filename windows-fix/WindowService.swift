@@ -71,7 +71,7 @@ enum WindowService {
         var restored = 0
         var skipped = 0
 
-        for (bundleID, saved) in Dictionary(grouping: layout.windows, by: \.bundleID) {
+        for (bundleID, saved) in Dictionary(grouping: layout.windows.filter(\.isEnabled), by: \.bundleID) {
             guard let app = running[bundleID]?.first else { skipped += saved.count; continue }
             var available = liveWindows(of: app)
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(LayoutStore.self) private var store
     @State private var newName = ""
+    @State private var editing: SavedLayout?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -27,11 +28,12 @@ struct ContentView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text(layout.name).font(.headline)
-                            Text("\(layout.windows.count) ventanas · \(layout.displayUUIDs.count) monitor(es) · \(layout.date.formatted(date: .abbreviated, time: .shortened))")
+                            Text("\(layout.windows.filter(\.isEnabled).count)/\(layout.windows.count) ventanas · \(layout.displayUUIDs.count) monitor(es) · \(layout.date.formatted(date: .abbreviated, time: .shortened))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
+                        Button("Editar") { editing = layout }
                         Button("Restaurar") { store.restore(layout) }
                         Button(role: .destructive) { store.delete(layout) } label: {
                             Image(systemName: "trash")
@@ -50,6 +52,10 @@ struct ContentView: View {
         }
         .padding()
         .frame(minWidth: 520, minHeight: 360)
+        .sheet(item: $editing) { layout in
+            // The editor reads live data from the store by ID; `layout` only identifies it.
+            LayoutEditorView(layoutID: layout.id)
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             store.refreshTrust()
         }

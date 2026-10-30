@@ -43,6 +43,45 @@ final class LayoutStore {
         persist()
     }
 
+    // MARK: Editing
+
+    func layout(withID id: SavedLayout.ID) -> SavedLayout? {
+        layouts.first { $0.id == id }
+    }
+
+    func rename(_ id: SavedLayout.ID, to name: String) {
+        edit(id) { $0.name = name }
+    }
+
+    func setWindow(_ windowID: SavedWindow.ID, enabled: Bool, in id: SavedLayout.ID) {
+        edit(id) { layout in
+            guard let i = layout.windows.firstIndex(where: { $0.id == windowID }) else { return }
+            layout.windows[i].isEnabled = enabled
+        }
+    }
+
+    func removeWindow(_ windowID: SavedWindow.ID, from id: SavedLayout.ID) {
+        edit(id) { $0.windows.removeAll { $0.id == windowID } }
+    }
+
+    func add(_ windows: [SavedWindow], to id: SavedLayout.ID) {
+        edit(id) { $0.windows.append(contentsOf: windows) }
+    }
+
+    /// Open windows (current positions) that are not yet part of the layout.
+    func availableWindows(for id: SavedLayout.ID) -> [SavedWindow] {
+        guard WindowService.isTrusted, let layout = layout(withID: id) else { return [] }
+        return WindowService.captureWindows().filter { live in
+            !layout.windows.contains { $0.matches(live) }
+        }
+    }
+
+    private func edit(_ id: SavedLayout.ID, _ change: (inout SavedLayout) -> Void) {
+        guard let i = layouts.firstIndex(where: { $0.id == id }) else { return }
+        change(&layouts[i])
+        persist()
+    }
+
     // MARK: Persistence
 
     private func load() {
